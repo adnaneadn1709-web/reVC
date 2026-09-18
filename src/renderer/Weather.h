@@ -56,7 +56,7 @@ public:
 	static void AddHeatHaze();
 	static void AddBeastie();
 
-	static void ForceHurricaneWeather();
+	static void ForceHurricaneWeather(); // Preserves the original weather API/ABI
 };
 
 enum {
