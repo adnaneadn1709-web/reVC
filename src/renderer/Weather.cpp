@@ -91,12 +91,12 @@ int16 WeatherTypesList_WithHurricanes[] = {
 };
 
 const float Windyness[] = {
-	0.25f,// WEATHER_SUNNY
-	0.7f, // WEATHER_CLOUDY
-	1.0f, // WEATHER_RAINY
-	0.0f, // WEATHER_FOGGY
-	0.0f, // WEATHER_EXTRA_SUNNY
-	2.0f, // WEATHER_HURRICANE
+	0.18f,// WEATHER_SUNNY
+	0.42f, // WEATHER_CLOUDY
+	0.72f, // WEATHER_RAINY
+	0.08f, // WEATHER_FOGGY
+	0.12f, // WEATHER_EXTRA_SUNNY
+	1.45f, // WEATHER_HURRICANE
 	0.0f
 };
 
@@ -109,22 +109,22 @@ const float Windyness[] = {
 #define DROPLETS_TOP_OFFSET (10.0f)
 #define DROPLETS_BOTTOM_OFFSET (10.0f)
 
-#define STREAK_U (10.0f)
-#define STREAK_V (18.0f)
-#define LARGE_STREAK_COEFFICIENT (1.23f)
+#define STREAK_U (7.5f)
+#define STREAK_V (15.0f)
+#define LARGE_STREAK_COEFFICIENT (1.12f)
 #define STREAK_MIN_DISTANCE (8.0f)
-#define STREAK_MAX_DISTANCE (16.0f)
+#define STREAK_MAX_DISTANCE (22.0f)
 
 #define SPLASH_CHECK_RADIUS (7.0f)
 #define SPLASH_OFFSET_RADIUS (2.0f)
 
-#define STREAK_LIFETIME (4.0f)
-#define STREAK_INTEROLATION_TIME (0.3f)
+#define STREAK_LIFETIME (2.75f)
+#define STREAK_INTEROLATION_TIME (0.22f)
 
-#define RAIN_COLOUR_R (200)
-#define RAIN_COLOUR_G (200)
-#define RAIN_COLOUR_B (256)
-#define RAIN_ALPHA (255)
+#define RAIN_COLOUR_R (190)
+#define RAIN_COLOUR_G (205)
+#define RAIN_COLOUR_B (220)
+#define RAIN_ALPHA (185)
 
 void CWeather::Init(void)
 {
@@ -207,34 +207,33 @@ void CWeather::Update(void)
 		WhenToPlayLightningSound = 0;
 	}
 
-	// Wet roads
+	// Wet roads: wet quickly during rain and dry gradually afterwards.
 	if (OldWeatherType == WEATHER_RAINY || OldWeatherType == WEATHER_HURRICANE) {
 		if (NewWeatherType == WEATHER_RAINY || NewWeatherType == WEATHER_HURRICANE)
 			WetRoads = 1.0f;
 		else
-			WetRoads = 1.0f - InterpolationValue;
+			WetRoads = 1.0f - InterpolationValue * 0.65f;
 	}
 	else {
 		if (NewWeatherType == WEATHER_RAINY || NewWeatherType == WEATHER_HURRICANE)
-			WetRoads = InterpolationValue;
+			WetRoads = Min(1.0f, InterpolationValue * 1.15f);
 		else
 			WetRoads = 0.0f;
 	}
 
-	// Rain
+	// Rain: smooth intensity variation instead of abrupt intensity steps.
 	float fNewRain;
 	if (NewWeatherType == WEATHER_RAINY || NewWeatherType == WEATHER_HURRICANE) {
-		// if raining for >1 hour, values: 0, 0.33, switching every ~16.5s
-		fNewRain = (((uint16)CTimer::GetTimeInMilliseconds() >> 14) & 1) * 0.33f;
-		if (OldWeatherType != WEATHER_RAINY && OldWeatherType != WEATHER_HURRICANE) {
-			if (InterpolationValue < 0.4f)
-				// if rain has just started (<24 minutes), always 0.5
-				fNewRain = 0.5f;
-			else
-				// if rain is ongoing for >24 minutes, values: 0.25, 0.5, switching every ~16.5s
-				fNewRain = 0.25f + (((uint16)CTimer::GetTimeInMilliseconds() >> 14) & 1) * 0.25f;
-		}
-		fNewRain = Max(fNewRain, 0.5f);
+		float phase = (CTimer::GetTimeInMilliseconds() & 16383) / 16383.0f;
+		float pulse = 0.5f + 0.5f * Sin(phase * TWOPI);
+		float target = (NewWeatherType == WEATHER_HURRICANE)
+			? (0.62f + 0.28f * pulse)
+			: (0.38f + 0.30f * pulse);
+
+		if (OldWeatherType != WEATHER_RAINY && OldWeatherType != WEATHER_HURRICANE)
+			target *= Min(1.0f, 0.35f + InterpolationValue * 1.65f);
+
+		fNewRain = Clamp(target, 0.0f, 1.0f);
 	}
 	else
 		fNewRain = 0.0f;
@@ -245,7 +244,7 @@ void CWeather::Update(void)
 		CloudCoverage = 1.0f - InterpolationValue;
 	else
 		CloudCoverage = 0.0f;
-	if (NewWeatherType != WEATHER_SUNNY && OldWeatherType != WEATHER_EXTRA_SUNNY)
+	if (NewWeatherType != WEATHER_SUNNY && NewWeatherType != WEATHER_EXTRA_SUNNY)
 		CloudCoverage += InterpolationValue;
 	
 	// Fog
