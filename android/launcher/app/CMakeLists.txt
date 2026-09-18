@@ -7,7 +7,6 @@
 # for the mobile game, integrates shared cross-platform sources, configures compiler settings,
 # and handles dependency resolution.
 # ==================================================================================================
-
 cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 
 message(" ")
@@ -48,7 +47,7 @@ if(IS_DIRECTORY "${REVC_GAME_DIR}" AND EXISTS "${REVC_GAME_DIR}/CMakeLists.txt")
     message(" *  🚀 Initiating Game module build configuration...")
     message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     message(" ")
-    add_subdirectory(${REVC_GAME_DIR} ${CMAKE_BINARY_DIR}/game_build)
+    #add_subdirectory(${REVC_GAME_DIR} ${CMAKE_BINARY_DIR}/game_build)
 else()
     message(" *  ⚠️ Game source directory or CMakeLists.txt not found at: ${REVC_GAME_DIR}")
     message(FATAL_ERROR " *  ❗ Please ensure the game module sources are available for the build.")
